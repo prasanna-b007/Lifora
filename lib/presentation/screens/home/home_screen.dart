@@ -31,9 +31,9 @@ class HomeScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Device Settings',
+            tooltip: 'App Settings',
             onPressed: () =>
-                Navigator.pushNamed(context, AppRoutes.deviceSettings),
+                Navigator.pushNamed(context, AppRoutes.appSettings),
           ),
         ],
       ),
@@ -58,7 +58,10 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 20),
 
               // ── Device Status Card ──────────────────────────────
-              _DeviceStatusCard(device: homeProvider.device),
+              GestureDetector(
+                onTap: () => Navigator.pushNamed(context, AppRoutes.liforaBand),
+                child: _DeviceStatusCard(device: homeProvider.device),
+              ),
               const SizedBox(height: 28),
 
               // ── SOS Trigger Section ─────────────────────────────

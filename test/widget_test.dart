@@ -1,5 +1,7 @@
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:lifora/app/app.dart';
 import 'package:lifora/data/repositories/mock_alert_repository.dart';
@@ -15,10 +17,14 @@ import 'package:lifora/presentation/providers/contacts_provider.dart';
 import 'package:lifora/presentation/providers/alert_history_provider.dart';
 import 'package:lifora/presentation/providers/device_settings_provider.dart';
 import 'package:lifora/presentation/providers/live_alert_provider.dart';
+import 'package:lifora/presentation/providers/app_settings_provider.dart';
 
 void main() {
   testWidgets('App launches to HomeScreen with greeting',
       (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+
     final deviceRepo = MockDeviceRepository();
     final contactRepo = MockContactRepository();
     final alertRepo = MockAlertRepository();
@@ -27,6 +33,9 @@ void main() {
     await tester.pumpWidget(
       MultiProvider(
         providers: [
+          ChangeNotifierProvider<AppSettingsProvider>(
+            create: (_) => AppSettingsProvider(prefs),
+          ),
           Provider<DeviceConnectionService>(
             create: (_) => connectionService,
           ),

@@ -5,7 +5,8 @@ import '../presentation/screens/live_alert/live_alert_screen.dart';
 import '../presentation/screens/contacts/contacts_screen.dart';
 import '../presentation/screens/alert_history/alert_history_screen.dart';
 import '../presentation/screens/alert_history/alert_detail_screen.dart';
-import '../presentation/screens/device_settings/device_settings_screen.dart';
+import '../presentation/screens/device_settings/lifora_band_screen.dart';
+import '../presentation/screens/settings/app_settings_screen.dart';
 
 /// Named route constants for Lifora.
 ///
@@ -19,7 +20,8 @@ class AppRoutes {
   static const String contacts = '/contacts';
   static const String alertHistory = '/alert-history';
   static const String alertDetail = '/alert-detail';
-  static const String deviceSettings = '/device-settings';
+  static const String liforaBand = '/lifora-band';
+  static const String appSettings = '/app-settings';
 }
 
 /// Generates routes from [AppRoutes] constants.
@@ -59,9 +61,15 @@ Route<dynamic>? onGenerateRoute(RouteSettings settings) {
         settings: settings,
       );
 
-    case AppRoutes.deviceSettings:
+    case AppRoutes.liforaBand:
       return MaterialPageRoute(
-        builder: (_) => const DeviceSettingsScreen(),
+        builder: (_) => const LiforaBandScreen(),
+        settings: settings,
+      );
+
+    case AppRoutes.appSettings:
+      return MaterialPageRoute(
+        builder: (_) => const AppSettingsScreen(),
         settings: settings,
       );
 

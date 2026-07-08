@@ -4,8 +4,8 @@ import 'package:lifora/domain/entities/device.dart';
 import 'package:lifora/presentation/providers/device_settings_provider.dart';
 
 /// Screen for viewing and managing the connected Lifora device.
-class DeviceSettingsScreen extends StatelessWidget {
-  const DeviceSettingsScreen({super.key});
+class LiforaBandScreen extends StatelessWidget {
+  const LiforaBandScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +15,7 @@ class DeviceSettingsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Device Settings'),
+        title: const Text('Lifora Band'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -57,6 +57,19 @@ class DeviceSettingsScreen extends StatelessWidget {
             Text('Hardware Info', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
             _HardwareInfoCard(device: device),
+            const SizedBox(height: 24),
+
+            // Trigger Settings
+            Text('Trigger Settings', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 8),
+            const _TriggerSettingsCard(),
+            const SizedBox(height: 24),
+
+            // Advanced Settings
+            Text('Advanced', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 8),
+            _AdvancedSettingsCard(device: device),
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -207,6 +220,107 @@ class _HardwareInfoCard extends StatelessWidget {
                 color: device.batteryLevel > 20 ? theme.colorScheme.secondary : theme.colorScheme.error,
               ),
             ),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: Icon(Icons.sync, color: theme.colorScheme.primary),
+            title: const Text('Last Sync'),
+            trailing: Text(
+              device.lastSynced != null
+                  ? _formatSyncTime(device.lastSynced!)
+                  : 'Never',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatSyncTime(DateTime time) {
+    final diff = DateTime.now().difference(time);
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
+  }
+}
+
+class _TriggerSettingsCard extends StatelessWidget {
+  const _TriggerSettingsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final trailing = Text(
+      'Coming Soon',
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+        fontStyle: FontStyle.italic,
+      ),
+    );
+
+    return Card(
+      child: Column(
+        children: [
+          ListTile(
+            title: const Text('Triple Tap'),
+            trailing: trailing,
+          ),
+          const Divider(height: 1),
+          ListTile(
+            title: const Text('Long Press'),
+            trailing: trailing,
+          ),
+          const Divider(height: 1),
+          ListTile(
+            title: const Text('Fall Detection'),
+            trailing: trailing,
+          ),
+          const Divider(height: 1),
+          ListTile(
+            title: const Text('Whistle Detection'),
+            trailing: trailing,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AdvancedSettingsCard extends StatelessWidget {
+  const _AdvancedSettingsCard({required this.device});
+
+  final Device device;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: Column(
+        children: [
+          ListTile(
+            title: const Text('Device ID'),
+            subtitle: Text(device.id),
+          ),
+          const Divider(height: 1),
+          const ListTile(
+            title: Text('BLE UUID'),
+            subtitle: Text('Pending Integration'),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            title: Text(
+              'Factory Reset',
+              style: TextStyle(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            subtitle: const Text('(Disabled)'),
+            enabled: false,
           ),
         ],
       ),

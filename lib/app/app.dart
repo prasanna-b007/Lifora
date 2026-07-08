@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../presentation/providers/app_settings_provider.dart';
 import 'routes.dart';
 import 'theme/app_theme.dart';
 
@@ -12,18 +14,22 @@ class LiforaApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Lifora',
+    return Consumer<AppSettingsProvider>(
+      builder: (context, settings, child) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Lifora',
 
-      // ── Theme ─────────────────────────────────────────────────────
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
+          // ── Theme ─────────────────────────────────────────────────────
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          themeMode: settings.themeMode,
 
-      // ── Navigation ────────────────────────────────────────────────
-      initialRoute: AppRoutes.home,
-      onGenerateRoute: onGenerateRoute,
+          // ── Navigation ────────────────────────────────────────────────
+          initialRoute: AppRoutes.home,
+          onGenerateRoute: onGenerateRoute,
+        );
+      },
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app.dart';
 import 'data/repositories/mock_alert_repository.dart';
@@ -15,6 +16,7 @@ import 'presentation/providers/contacts_provider.dart';
 import 'presentation/providers/alert_history_provider.dart';
 import 'presentation/providers/device_settings_provider.dart';
 import 'presentation/providers/live_alert_provider.dart';
+import 'presentation/providers/app_settings_provider.dart';
 
 /// Lifora — Smart Wearable Emergency Communication System
 ///
@@ -23,10 +25,18 @@ import 'presentation/providers/live_alert_provider.dart';
 /// - DeviceConnectionService uses MockDeviceConnectionService
 ///   (swap to BleDeviceConnectionService when hardware is ready).
 /// - No login/signup — app opens straight into HomeScreen.
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+
   runApp(
     MultiProvider(
       providers: [
+        // ── App Settings ─────────────────────────────────────────
+        ChangeNotifierProvider<AppSettingsProvider>(
+          create: (_) => AppSettingsProvider(prefs),
+        ),
+
         // ── Device Connection Service ────────────────────────────
         // Swap MockDeviceConnectionService → BleDeviceConnectionService
         // when the ESP32-C3 hardware is ready. No other code changes needed.
