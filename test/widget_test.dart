@@ -1,30 +1,75 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 
-import 'package:lifora/main.dart';
+import 'package:lifora/app/app.dart';
+import 'package:lifora/data/repositories/mock_alert_repository.dart';
+import 'package:lifora/data/repositories/mock_contact_repository.dart';
+import 'package:lifora/data/repositories/mock_device_repository.dart';
+import 'package:lifora/data/services/device_connection_service.dart';
+import 'package:lifora/data/services/mock_device_connection_service.dart';
+import 'package:lifora/domain/repositories/alert_repository.dart';
+import 'package:lifora/domain/repositories/contact_repository.dart';
+import 'package:lifora/domain/repositories/device_repository.dart';
+import 'package:lifora/presentation/providers/home_provider.dart';
+import 'package:lifora/presentation/providers/contacts_provider.dart';
+import 'package:lifora/presentation/providers/alert_history_provider.dart';
+import 'package:lifora/presentation/providers/device_settings_provider.dart';
+import 'package:lifora/presentation/providers/live_alert_provider.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const LiforaApp());
+  testWidgets('App launches to HomeScreen with greeting',
+      (WidgetTester tester) async {
+    final deviceRepo = MockDeviceRepository();
+    final contactRepo = MockContactRepository();
+    final alertRepo = MockAlertRepository();
+    final connectionService = MockDeviceConnectionService();
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          Provider<DeviceConnectionService>(
+            create: (_) => connectionService,
+          ),
+          Provider<DeviceRepository>(create: (_) => deviceRepo),
+          Provider<ContactRepository>(create: (_) => contactRepo),
+          Provider<AlertRepository>(create: (_) => alertRepo),
+          ChangeNotifierProvider<HomeProvider>(
+            create: (_) => HomeProvider(
+              deviceRepository: deviceRepo,
+              contactRepository: contactRepo,
+              alertRepository: alertRepo,
+            ),
+          ),
+          ChangeNotifierProvider<ContactsProvider>(
+            create: (_) => ContactsProvider(
+              contactRepository: contactRepo,
+            ),
+          ),
+          ChangeNotifierProvider<AlertHistoryProvider>(
+            create: (_) => AlertHistoryProvider(
+              alertRepository: alertRepo,
+            ),
+          ),
+          ChangeNotifierProvider<DeviceSettingsProvider>(
+            create: (_) => DeviceSettingsProvider(
+              connectionService: connectionService,
+              deviceRepository: deviceRepo,
+            ),
+          ),
+          ChangeNotifierProvider<LiveAlertProvider>(
+            create: (_) => LiveAlertProvider(
+              connectionService: connectionService,
+              alertRepository: alertRepo,
+              contactRepository: contactRepo,
+            ),
+          ),
+        ],
+        child: const LiforaApp(),
+      ),
+    );
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Verify the app launches and shows the greeting.
+    expect(find.text('Lifora'), findsOneWidget);
+    expect(find.text('Hello, Prasanna B'), findsOneWidget);
   });
 }
