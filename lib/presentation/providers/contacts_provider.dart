@@ -12,7 +12,10 @@ class ContactsProvider extends ChangeNotifier {
   final ContactRepository _contactRepository;
 
   /// Returns all emergency contacts.
-  List<Contact> get contacts => _contactRepository.getContacts();
+  List<Contact> get contacts {
+    print("Loading contacts...");
+    return _contactRepository.getContacts();
+  }
 
   /// Whether the user can add more contacts.
   bool get canAddContact => contacts.length < AppConstants.maxEmergencyContacts;
@@ -20,6 +23,8 @@ class ContactsProvider extends ChangeNotifier {
   /// Adds a new contact if the limit has not been reached.
   void addContact(Contact contact) {
     if (!canAddContact) return;
+    
+    print("Saving contact...");
     
     // If this is the first contact or marked as primary, ensure others are not primary.
     final isFirst = contacts.isEmpty;
@@ -35,6 +40,7 @@ class ContactsProvider extends ChangeNotifier {
 
   /// Updates an existing contact.
   void updateContact(Contact contact) {
+    print("Saving contact...");
     if (contact.isPrimary) {
       _clearPrimary();
     }
@@ -63,6 +69,7 @@ class ContactsProvider extends ChangeNotifier {
 
     _clearPrimary();
     _contactRepository.updateContact(contact.copyWith(isPrimary: true));
+    print("Primary contact updated.");
     notifyListeners();
   }
 

@@ -104,8 +104,12 @@ class HomeScreen extends StatelessWidget {
                 actionLabel: homeProvider.totalContactCount > 3
                     ? 'View all (${homeProvider.totalContactCount})'
                     : 'Manage',
-                onAction: () =>
-                    Navigator.pushNamed(context, AppRoutes.contacts),
+                onAction: () async {
+                  await Navigator.pushNamed(context, AppRoutes.contacts);
+                  if (context.mounted) {
+                    context.read<HomeProvider>().refresh();
+                  }
+                },
               ),
               const SizedBox(height: 8),
               ...homeProvider.quickContacts.map(
@@ -115,8 +119,12 @@ class HomeScreen extends StatelessWidget {
                 _EmptyHint(
                   message: 'No emergency contacts added yet.',
                   actionLabel: 'Add contacts',
-                  onAction: () =>
-                      Navigator.pushNamed(context, AppRoutes.contacts),
+                  onAction: () async {
+                    await Navigator.pushNamed(context, AppRoutes.contacts);
+                    if (context.mounted) {
+                      context.read<HomeProvider>().refresh();
+                    }
+                  },
                 ),
               const SizedBox(height: 24),
 

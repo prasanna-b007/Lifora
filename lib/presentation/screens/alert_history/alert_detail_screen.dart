@@ -4,6 +4,7 @@ import 'package:lifora/app/theme/app_colors.dart';
 import 'package:lifora/domain/entities/alert.dart';
 import 'package:lifora/domain/entities/layer_status.dart';
 import 'package:lifora/presentation/providers/alert_history_provider.dart';
+import 'package:lifora/presentation/providers/contacts_provider.dart';
 
 /// Screen displaying the details of a specific past alert.
 class AlertDetailScreen extends StatelessWidget {
@@ -328,6 +329,7 @@ class _NotifiedContactsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final contactsProvider = context.watch<ContactsProvider>();
     
     if (alert.notifiedContactIds.isEmpty) {
       return Card(
@@ -364,19 +366,16 @@ class _NotifiedContactsCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: alert.notifiedContactIds.map((id) {
-                // We use mock names since this is a UI build.
-                // In a real app we'd fetch the contact details from the repository.
-                // Since this is mock data and we know 'c1' is 'Amma' etc, we'll map them.
-                String name = 'Contact';
-                if (id == 'c1') name = 'Amma';
-                if (id == 'c2') name = 'Appa';
-                if (id == 'c3') name = 'Kavitha';
+                final match = contactsProvider.contacts.where((c) => c.id == id).toList();
+                final contact = match.isNotEmpty ? match.first : null;
+                final name = contact?.name ?? 'Removed contact';
+                final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
 
                 return Chip(
                   avatar: CircleAvatar(
                     backgroundColor: theme.colorScheme.primaryContainer,
                     child: Text(
-                      name[0],
+                      initial,
                       style: TextStyle(
                         fontSize: 12,
                         color: theme.colorScheme.primary,

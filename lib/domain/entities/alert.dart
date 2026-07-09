@@ -42,6 +42,9 @@ class Alert {
   /// GPS longitude at the time of the alert.
   final double longitude;
 
+  /// GPS accuracy in meters at the time of the alert.
+  final double accuracy;
+
   /// IDs of contacts that were successfully notified.
   final List<String> notifiedContactIds;
 
@@ -53,6 +56,7 @@ class Alert {
     required this.layers,
     required this.latitude,
     required this.longitude,
+    this.accuracy = 0.0,
     required this.notifiedContactIds,
   });
 
@@ -65,6 +69,7 @@ class Alert {
     List<LayerStatus>? layers,
     double? latitude,
     double? longitude,
+    double? accuracy,
     List<String>? notifiedContactIds,
   }) {
     return Alert(
@@ -75,6 +80,7 @@ class Alert {
       layers: layers ?? this.layers,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      accuracy: accuracy ?? this.accuracy,
       notifiedContactIds: notifiedContactIds ?? this.notifiedContactIds,
     );
   }

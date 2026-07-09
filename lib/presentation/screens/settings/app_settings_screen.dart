@@ -119,26 +119,6 @@ class AppSettingsScreen extends StatelessWidget {
               subtitle: Text('Current Version'),
               trailing: Text('1.0.0-beta'),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Prototype Status', style: theme.textTheme.titleSmall),
-                      const SizedBox(height: 8),
-                      _statusRow(theme, true, 'BLE Architecture Ready'),
-                      _statusRow(theme, true, 'UI Complete'),
-                      _statusRow(theme, false, 'Hardware Integration Pending'),
-                      _statusRow(theme, false, 'GSM Pending'),
-                      _statusRow(theme, false, 'Mesh Pending'),
-                    ],
-                  ),
-                ),
-              ),
-            ),
             const SizedBox(height: 32),
           ],
         ),
@@ -146,27 +126,7 @@ class AppSettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _statusRow(ThemeData theme, bool isComplete, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        children: [
-          Icon(
-            isComplete ? Icons.check_circle : Icons.radio_button_unchecked,
-            size: 16,
-            color: isComplete ? theme.colorScheme.secondary : theme.colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            text,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: isComplete ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   String _themeModeName(ThemeMode mode) {
     switch (mode) {

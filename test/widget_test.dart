@@ -9,6 +9,9 @@ import 'package:lifora/data/repositories/mock_contact_repository.dart';
 import 'package:lifora/data/repositories/mock_device_repository.dart';
 import 'package:lifora/data/services/device_connection_service.dart';
 import 'package:lifora/data/services/mock_device_connection_service.dart';
+import 'package:lifora/data/services/mock_location_service.dart';
+import 'package:lifora/data/services/notification_service.dart';
+import 'package:lifora/domain/entities/alert.dart';
 import 'package:lifora/domain/repositories/alert_repository.dart';
 import 'package:lifora/domain/repositories/contact_repository.dart';
 import 'package:lifora/domain/repositories/device_repository.dart';
@@ -29,6 +32,8 @@ void main() {
     final contactRepo = MockContactRepository();
     final alertRepo = MockAlertRepository();
     final connectionService = MockDeviceConnectionService();
+    final locationService = MockLocationService();
+    final notificationService = MockNotificationService();
 
     await tester.pumpWidget(
       MultiProvider(
@@ -70,6 +75,8 @@ void main() {
               connectionService: connectionService,
               alertRepository: alertRepo,
               contactRepository: contactRepo,
+              locationService: locationService,
+              notificationService: notificationService,
             ),
           ),
         ],
@@ -81,4 +88,15 @@ void main() {
     expect(find.text('Lifora'), findsOneWidget);
     expect(find.text('Hello, Prasanna B'), findsOneWidget);
   });
+}
+
+class MockNotificationService implements NotificationService {
+  @override
+  Future<void> notifySosCancelled(Alert alert) async {}
+
+  @override
+  Future<void> notifySosDelivered(Alert alert) async {}
+
+  @override
+  Future<void> notifySosTriggered(Alert alert) async {}
 }

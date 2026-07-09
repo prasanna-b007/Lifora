@@ -50,6 +50,7 @@ class HomeProvider extends ChangeNotifier {
 
   /// Refreshes all data and notifies listeners.
   void refresh() {
+    print("Refreshing Home Screen...");
     notifyListeners();
   }
 }

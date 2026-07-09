@@ -5,6 +5,8 @@ import 'package:lifora/domain/entities/layer_status.dart';
 import 'package:lifora/domain/repositories/alert_repository.dart';
 import 'package:lifora/domain/repositories/contact_repository.dart';
 import 'package:lifora/data/services/device_connection_service.dart';
+import 'package:lifora/data/services/location_service.dart';
+import 'package:lifora/data/services/notification_service.dart';
 
 /// View model for the Live Alert Screen.
 ///
@@ -18,13 +20,19 @@ class LiveAlertProvider extends ChangeNotifier {
     required DeviceConnectionService connectionService,
     required AlertRepository alertRepository,
     required ContactRepository contactRepository,
+    required LocationService locationService,
+    required NotificationService notificationService,
   })  : _connectionService = connectionService,
         _alertRepository = alertRepository,
-        _contactRepository = contactRepository;
+        _contactRepository = contactRepository,
+        _locationService = locationService,
+        _notificationService = notificationService;
 
   final DeviceConnectionService _connectionService;
   final AlertRepository _alertRepository;
   final ContactRepository _contactRepository;
+  final LocationService _locationService;
+  final NotificationService _notificationService;
 
   Alert? _currentAlert;
   Alert? get currentAlert => _currentAlert;
@@ -33,10 +41,12 @@ class LiveAlertProvider extends ChangeNotifier {
   int _currentLayerIndex = 0;
 
   /// Starts a new SOS alert sequence.
-  void startAlert() {
+  Future<void> startAlert() async {
     if (_currentAlert != null && _currentAlert!.status == AlertStatus.inProgress) {
       return; // Already running
     }
+
+    final locationResult = await _locationService.getCurrentLocation();
 
     // Initialize the alert state
     _currentAlert = Alert(
@@ -44,8 +54,9 @@ class LiveAlertProvider extends ChangeNotifier {
       timestamp: DateTime.now(),
       status: AlertStatus.inProgress,
       resolvedAtLayer: 0,
-      latitude: 11.0168, // Coimbatore mock location
-      longitude: 76.9558,
+      latitude: locationResult.latitude,
+      longitude: locationResult.longitude,
+      accuracy: locationResult.accuracy,
       notifiedContactIds: [],
       layers: const [
         LayerStatus(layer: 1, label: 'BLE to Phone', state: LayerState.pending),
@@ -56,6 +67,8 @@ class LiveAlertProvider extends ChangeNotifier {
 
     _currentLayerIndex = 0;
     notifyListeners();
+    
+    _notificationService.notifySosTriggered(_currentAlert!);
 
     // Trigger the actual hardware/service (simulated here)
     _connectionService.sendSosAlert();
@@ -75,6 +88,8 @@ class LiveAlertProvider extends ChangeNotifier {
     _currentAlert = _currentAlert!.copyWith(
       status: AlertStatus.cancelled,
     );
+    
+    _notificationService.notifySosCancelled(_currentAlert!);
     
     // Save to history
     _alertRepository.addAlert(_currentAlert!);
@@ -127,6 +142,8 @@ class LiveAlertProvider extends ChangeNotifier {
           notifiedContactIds: notifiedIds,
         );
         
+        _notificationService.notifySosDelivered(_currentAlert!);
+
         // Save to history
         _alertRepository.addAlert(_currentAlert!);
         notifyListeners();
@@ -155,3 +172,4 @@ class LiveAlertProvider extends ChangeNotifier {
     super.dispose();
   }
 }
+
