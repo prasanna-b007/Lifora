@@ -48,6 +48,9 @@ class Alert {
   /// IDs of contacts that were successfully notified.
   final List<String> notifiedContactIds;
 
+  /// The battery level of the wearable at the moment the alert was triggered.
+  final int? batteryAtTrigger;
+
   const Alert({
     required this.id,
     required this.timestamp,
@@ -58,6 +61,7 @@ class Alert {
     required this.longitude,
     this.accuracy = 0.0,
     required this.notifiedContactIds,
+    this.batteryAtTrigger,
   });
 
   /// Returns a copy of this [Alert] with the given fields replaced.
@@ -71,6 +75,7 @@ class Alert {
     double? longitude,
     double? accuracy,
     List<String>? notifiedContactIds,
+    int? batteryAtTrigger,
   }) {
     return Alert(
       id: id ?? this.id,
@@ -82,6 +87,7 @@ class Alert {
       longitude: longitude ?? this.longitude,
       accuracy: accuracy ?? this.accuracy,
       notifiedContactIds: notifiedContactIds ?? this.notifiedContactIds,
+      batteryAtTrigger: batteryAtTrigger ?? this.batteryAtTrigger,
     );
   }
 }

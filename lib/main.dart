@@ -5,7 +5,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'app/app.dart';
-import 'data/repositories/mock_device_repository.dart';
 
 import 'data/repositories/hive_alert_repository.dart';
 import 'data/repositories/hive_contact_repository.dart';
@@ -14,7 +13,7 @@ import 'data/models/layer_status_hive_model.dart';
 import 'data/models/alert_hive_model.dart';
 
 import 'data/services/device_connection_service.dart';
-import 'data/services/mock_device_connection_service.dart';
+import 'data/services/virtual_wearable_service.dart';
 import 'data/services/location_service.dart';
 import 'data/services/geolocator_location_service.dart';
 import 'data/services/notification_service.dart';
@@ -22,7 +21,6 @@ import 'data/services/local_notification_service.dart';
 
 import 'domain/repositories/alert_repository.dart';
 import 'domain/repositories/contact_repository.dart';
-import 'domain/repositories/device_repository.dart';
 
 import 'presentation/providers/home_provider.dart';
 import 'presentation/providers/contacts_provider.dart';
@@ -36,7 +34,7 @@ import 'presentation/providers/app_settings_provider.dart';
 /// Entry point. Sets up dependency injection via Provider:
 /// - Contact & Alert repositories use Hive implementations.
 /// - Location & Notification use real OS-level services.
-/// - DeviceConnectionService uses MockDeviceConnectionService
+/// - DeviceConnectionService uses VirtualWearableService
 ///   (swap to BleDeviceConnectionService when hardware is ready).
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -64,13 +62,8 @@ void main() async {
         ),
 
         // ── Services ─────────────────────────────────────────────
-        Provider<DeviceConnectionService>(
-          create: (_) => MockDeviceConnectionService(),
-          dispose: (_, service) {
-            if (service is MockDeviceConnectionService) {
-              service.dispose();
-            }
-          },
+        ChangeNotifierProvider<DeviceConnectionService>(
+          create: (_) => VirtualWearableService(),
         ),
         Provider<LocationService>(
           create: (_) => GeolocatorLocationService(),
@@ -80,9 +73,6 @@ void main() async {
         ),
 
         // ── Repositories ─────────────────────────────────────────
-        Provider<DeviceRepository>(
-          create: (_) => MockDeviceRepository(),
-        ),
         Provider<ContactRepository>(
           create: (_) => HiveContactRepository(contactsBox),
         ),
@@ -93,7 +83,7 @@ void main() async {
         // ── View Models ──────────────────────────────────────────
         ChangeNotifierProvider<HomeProvider>(
           create: (context) => HomeProvider(
-            deviceRepository: context.read<DeviceRepository>(),
+            connectionService: context.read<DeviceConnectionService>(),
             contactRepository: context.read<ContactRepository>(),
             alertRepository: context.read<AlertRepository>(),
           ),
@@ -111,10 +101,10 @@ void main() async {
         ChangeNotifierProvider<DeviceSettingsProvider>(
           create: (context) => DeviceSettingsProvider(
             connectionService: context.read<DeviceConnectionService>(),
-            deviceRepository: context.read<DeviceRepository>(),
           ),
         ),
         ChangeNotifierProvider<LiveAlertProvider>(
+          lazy: false,
           create: (context) => LiveAlertProvider(
             connectionService: context.read<DeviceConnectionService>(),
             alertRepository: context.read<AlertRepository>(),

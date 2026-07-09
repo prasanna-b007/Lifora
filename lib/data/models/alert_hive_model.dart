@@ -78,6 +78,9 @@ class AlertHiveModel extends HiveObject {
   @HiveField(8)
   final List<String> notifiedContactIds;
 
+  @HiveField(9)
+  final int? batteryAtTrigger;
+
   AlertHiveModel({
     required this.id,
     required this.timestamp,
@@ -88,6 +91,7 @@ class AlertHiveModel extends HiveObject {
     required this.longitude,
     required this.accuracy,
     required this.notifiedContactIds,
+    this.batteryAtTrigger,
   });
 
   factory AlertHiveModel.fromDomain(Alert alert) {
@@ -101,6 +105,7 @@ class AlertHiveModel extends HiveObject {
       longitude: alert.longitude,
       accuracy: alert.accuracy,
       notifiedContactIds: alert.notifiedContactIds,
+      batteryAtTrigger: alert.batteryAtTrigger,
     );
   }
 
@@ -115,6 +120,7 @@ class AlertHiveModel extends HiveObject {
       longitude: longitude,
       accuracy: accuracy,
       notifiedContactIds: notifiedContactIds,
+      batteryAtTrigger: batteryAtTrigger,
     );
   }
 }

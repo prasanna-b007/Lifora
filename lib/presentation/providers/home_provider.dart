@@ -5,7 +5,7 @@ import 'package:lifora/domain/entities/contact.dart';
 import 'package:lifora/domain/entities/device.dart';
 import 'package:lifora/domain/repositories/alert_repository.dart';
 import 'package:lifora/domain/repositories/contact_repository.dart';
-import 'package:lifora/domain/repositories/device_repository.dart';
+import 'package:lifora/data/services/device_connection_service.dart';
 
 /// View model for the Home / Dashboard screen.
 ///
@@ -13,21 +13,23 @@ import 'package:lifora/domain/repositories/device_repository.dart';
 /// into a single observable state for the home screen.
 class HomeProvider extends ChangeNotifier {
   HomeProvider({
-    required DeviceRepository deviceRepository,
+    required DeviceConnectionService connectionService,
     required ContactRepository contactRepository,
     required AlertRepository alertRepository,
-  })  : _deviceRepository = deviceRepository,
+  })  : _connectionService = connectionService,
         _contactRepository = contactRepository,
-        _alertRepository = alertRepository;
+        _alertRepository = alertRepository {
+    _connectionService.addListener(notifyListeners);
+  }
 
-  final DeviceRepository _deviceRepository;
+  final DeviceConnectionService _connectionService;
   final ContactRepository _contactRepository;
   final AlertRepository _alertRepository;
 
   // ── Device ──────────────────────────────────────────────────────────
 
   /// Current device state.
-  Device get device => _deviceRepository.getDevice();
+  Device get device => _connectionService.device;
 
   // ── Contacts ────────────────────────────────────────────────────────
 
@@ -52,5 +54,11 @@ class HomeProvider extends ChangeNotifier {
   void refresh() {
     print("Refreshing Home Screen...");
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _connectionService.removeListener(notifyListeners);
+    super.dispose();
   }
 }

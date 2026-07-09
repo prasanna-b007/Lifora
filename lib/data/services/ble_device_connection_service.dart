@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:lifora/domain/entities/device.dart';
+import 'package:lifora/domain/entities/wearable_event.dart';
 
 import 'device_connection_service.dart';
 
@@ -12,7 +13,7 @@ import 'device_connection_service.dart';
 ///
 /// **This is the ONLY file in the project that imports flutter_blue_plus.**
 /// All other code accesses BLE through the [DeviceConnectionService] interface.
-class BleDeviceConnectionService implements DeviceConnectionService {
+class BleDeviceConnectionService extends DeviceConnectionService {
   // Will be used once BLE logic is implemented.
   // ignore: unused_field
   FlutterBluePlus? _flutterBluePlus;
@@ -28,9 +29,13 @@ class BleDeviceConnectionService implements DeviceConnectionService {
       );
 
   @override
-  Stream<Device> get deviceStream => throw UnimplementedError(
-        'TODO: Map BLE state changes and characteristic updates '
-        'into a Stream<Device>.',
+  Device get device => throw UnimplementedError(
+        'TODO: Maintain the current Device state locally and return it here.',
+      );
+
+  @override
+  Stream<WearableEvent> get events => throw UnimplementedError(
+        'TODO: Parse incoming BLE notifications into WearableEvent stream.',
       );
 
   @override

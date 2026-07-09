@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:lifora/app/routes.dart';
 import 'package:lifora/presentation/providers/app_settings_provider.dart';
 
 /// Screen for application-wide settings (Appearance, Notifications, Permissions, About).
@@ -113,12 +114,7 @@ class AppSettingsScreen extends StatelessWidget {
                 ),
               ),
             ),
-            const ListTile(
-              leading: Icon(Icons.info_outline),
-              title: Text('App Version'),
-              subtitle: Text('Current Version'),
-              trailing: Text('1.0.0-beta'),
-            ),
+            const _VersionTile(),
             const SizedBox(height: 32),
           ],
         ),
@@ -162,6 +158,34 @@ class AppSettingsScreen extends StatelessWidget {
             }).toList(),
           ),
         );
+      },
+    );
+  }
+}
+
+class _VersionTile extends StatefulWidget {
+  const _VersionTile();
+
+  @override
+  State<_VersionTile> createState() => _VersionTileState();
+}
+
+class _VersionTileState extends State<_VersionTile> {
+  int _tapCount = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.info_outline),
+      title: const Text('App Version'),
+      subtitle: const Text('Current Version'),
+      trailing: const Text('1.0.0-beta'),
+      onTap: () {
+        _tapCount++;
+        if (_tapCount >= 7) {
+          _tapCount = 0;
+          Navigator.pushNamed(context, AppRoutes.developerMode);
+        }
       },
     );
   }

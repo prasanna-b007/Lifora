@@ -7,6 +7,7 @@ import 'package:lifora/core/constants.dart';
 import 'package:lifora/domain/entities/alert.dart';
 import 'package:lifora/domain/entities/contact.dart';
 import 'package:lifora/domain/entities/device.dart';
+import 'package:lifora/data/services/device_connection_service.dart';
 import 'package:lifora/presentation/providers/home_provider.dart';
 import 'package:lifora/presentation/widgets/sos_trigger_button.dart';
 
@@ -70,6 +71,7 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     SosTriggerButton(
                       onPressed: () {
+                        context.read<DeviceConnectionService>().sendSosAlert();
                         Navigator.pushNamed(context, AppRoutes.liveAlert);
                       },
                       enabled: homeProvider.device.isConnected,
@@ -79,6 +81,7 @@ class HomeScreen extends StatelessWidget {
                     // "Simulate SOS" — visually distinct demo action
                     TextButton.icon(
                       onPressed: () {
+                        context.read<DeviceConnectionService>().sendSosAlert();
                         Navigator.pushNamed(context, AppRoutes.liveAlert);
                       },
                       icon: Icon(

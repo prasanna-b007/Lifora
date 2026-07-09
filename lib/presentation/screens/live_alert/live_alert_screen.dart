@@ -19,11 +19,7 @@ class _LiveAlertScreenState extends State<LiveAlertScreen> {
   @override
   void initState() {
     super.initState();
-    // Start the alert automatically when the screen is opened.
-    // Use post-frame callback to avoid state modification during build.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<LiveAlertProvider>().startAlert();
-    });
+    // Alert is started automatically by LiveAlertProvider listening to events.
   }
 
   @override

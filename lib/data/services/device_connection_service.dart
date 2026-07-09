@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 
 import 'package:lifora/domain/entities/device.dart';
+import 'package:lifora/domain/entities/wearable_event.dart';
 
 /// Abstract interface for managing the BLE connection to a Lifora wearable.
 ///
@@ -11,18 +13,18 @@ import 'package:lifora/domain/entities/device.dart';
 ///
 /// The interface exposes connection state, battery level, a reactive device
 /// stream, and commands for connecting, disconnecting, and sending SOS alerts.
-abstract class DeviceConnectionService {
+abstract class DeviceConnectionService extends ChangeNotifier {
   /// Whether the device is currently connected.
   bool get isConnected;
 
-  /// The current battery level of the connected device (0–100).
+  /// The latest reported battery level (0-100).
   int get batteryLevel;
 
-  /// A stream that emits updated [Device] state whenever it changes.
-  ///
-  /// Subscribers receive the latest device info including connection
-  /// status, battery level, and last sync time.
-  Stream<Device> get deviceStream;
+  /// The current static and dynamic state of the connected device.
+  Device get device;
+
+  /// A stream of discrete events (e.g. SOS triggers) from the wearable.
+  Stream<WearableEvent> get events;
 
   /// Initiates a connection to the device with the given [deviceId].
   ///

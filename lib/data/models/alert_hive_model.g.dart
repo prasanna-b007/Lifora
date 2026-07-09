@@ -26,13 +26,14 @@ class AlertHiveModelAdapter extends TypeAdapter<AlertHiveModel> {
       longitude: fields[6] as double,
       accuracy: fields[7] as double,
       notifiedContactIds: (fields[8] as List).cast<String>(),
+      batteryAtTrigger: fields[9] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, AlertHiveModel obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -50,7 +51,9 @@ class AlertHiveModelAdapter extends TypeAdapter<AlertHiveModel> {
       ..writeByte(7)
       ..write(obj.accuracy)
       ..writeByte(8)
-      ..write(obj.notifiedContactIds);
+      ..write(obj.notifiedContactIds)
+      ..writeByte(9)
+      ..write(obj.batteryAtTrigger);
   }
 
   @override

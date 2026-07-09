@@ -4,6 +4,7 @@ import 'package:lifora/domain/entities/alert.dart';
 import 'package:lifora/domain/entities/layer_status.dart';
 import 'package:lifora/domain/repositories/alert_repository.dart';
 import 'package:lifora/domain/repositories/contact_repository.dart';
+import 'package:lifora/domain/entities/wearable_event.dart';
 import 'package:lifora/data/services/device_connection_service.dart';
 import 'package:lifora/data/services/location_service.dart';
 import 'package:lifora/data/services/notification_service.dart';
@@ -16,6 +17,15 @@ import 'package:lifora/data/services/notification_service.dart';
 /// 2. GSM / SMS Fallback
 /// 3. BLE Mesh Relay
 class LiveAlertProvider extends ChangeNotifier {
+  final DeviceConnectionService _connectionService;
+  final AlertRepository _alertRepository;
+  final ContactRepository _contactRepository;
+  final LocationService _locationService;
+  final NotificationService _notificationService;
+
+  StreamSubscription<WearableEvent>? _eventSub;
+  int? _forcedEscalationLayerForCurrentAlert;
+
   LiveAlertProvider({
     required DeviceConnectionService connectionService,
     required AlertRepository alertRepository,
@@ -26,13 +36,9 @@ class LiveAlertProvider extends ChangeNotifier {
         _alertRepository = alertRepository,
         _contactRepository = contactRepository,
         _locationService = locationService,
-        _notificationService = notificationService;
-
-  final DeviceConnectionService _connectionService;
-  final AlertRepository _alertRepository;
-  final ContactRepository _contactRepository;
-  final LocationService _locationService;
-  final NotificationService _notificationService;
+        _notificationService = notificationService {
+    _eventSub = _connectionService.events.listen(_onWearableEvent);
+  }
 
   Alert? _currentAlert;
   Alert? get currentAlert => _currentAlert;
@@ -40,23 +46,37 @@ class LiveAlertProvider extends ChangeNotifier {
   Timer? _escalationTimer;
   int _currentLayerIndex = 0;
 
-  /// Starts a new SOS alert sequence.
-  Future<void> startAlert() async {
+  void _onWearableEvent(WearableEvent event) {
+    if (event.type == WearableEventType.tripleTap ||
+        event.type == WearableEventType.longPress ||
+        event.type == WearableEventType.fall ||
+        event.type == WearableEventType.whistle ||
+        event.type == WearableEventType.manualSos) {
+      _startAlertFromEvent(event);
+    }
+  }
+
+  /// Starts a new SOS alert sequence from a triggered wearable event.
+  Future<void> _startAlertFromEvent(WearableEvent event) async {
     if (_currentAlert != null && _currentAlert!.status == AlertStatus.inProgress) {
       return; // Already running
     }
 
-    final locationResult = await _locationService.getCurrentLocation();
+    _escalationTimer?.cancel();
+    
+    int? batteryAtTrigger = event.payload['batteryLevel'] as int?;
+    _forcedEscalationLayerForCurrentAlert = event.payload['forcedOutcomeLayer'] as int?;
 
-    // Initialize the alert state
+    // Initialize the alert state immediately so UI doesn't hang on 'Loading'
     _currentAlert = Alert(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       timestamp: DateTime.now(),
       status: AlertStatus.inProgress,
       resolvedAtLayer: 0,
-      latitude: locationResult.latitude,
-      longitude: locationResult.longitude,
-      accuracy: locationResult.accuracy,
+      latitude: 0.0,
+      longitude: 0.0,
+      accuracy: 0.0,
+      batteryAtTrigger: batteryAtTrigger,
       notifiedContactIds: [],
       layers: const [
         LayerStatus(layer: 1, label: 'BLE to Phone', state: LayerState.pending),
@@ -67,11 +87,21 @@ class LiveAlertProvider extends ChangeNotifier {
 
     _currentLayerIndex = 0;
     notifyListeners();
+
+    // Fetch location without blocking the UI
+    try {
+      final locationResult = await _locationService.getCurrentLocation().timeout(const Duration(seconds: 5));
+      _currentAlert = _currentAlert!.copyWith(
+        latitude: locationResult.latitude,
+        longitude: locationResult.longitude,
+        accuracy: locationResult.accuracy,
+      );
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Location fetch failed or timed out: $e');
+    }
     
     _notificationService.notifySosTriggered(_currentAlert!);
-
-    // Trigger the actual hardware/service (simulated here)
-    _connectionService.sendSosAlert();
 
     // Begin the escalation simulation
     _processNextLayer();
@@ -98,7 +128,14 @@ class LiveAlertProvider extends ChangeNotifier {
 
   void _processNextLayer() {
     if (_currentAlert == null || _currentAlert!.status != AlertStatus.inProgress) return;
-    if (_currentLayerIndex >= _currentAlert!.layers.length) return;
+    
+    // If we've exhausted all layers, the alert has failed entirely.
+    if (_currentLayerIndex >= _currentAlert!.layers.length) {
+      _currentAlert = _currentAlert!.copyWith(status: AlertStatus.cancelled); // Terminal state
+      _alertRepository.addAlert(_currentAlert!);
+      notifyListeners();
+      return;
+    }
 
     // Set current layer to attempting
     _updateLayerState(_currentLayerIndex, LayerState.attempting);
@@ -111,22 +148,32 @@ class LiveAlertProvider extends ChangeNotifier {
       bool layerSucceeded = false;
       String? detail;
 
-      if (_currentLayerIndex == 0) {
-        // Layer 1 (BLE): Succeeds if the device is connected
-        if (_connectionService.isConnected) {
+      if (_forcedEscalationLayerForCurrentAlert != null) {
+        if (_currentLayerIndex + 1 == _forcedEscalationLayerForCurrentAlert) {
           layerSucceeded = true;
-          detail = 'Delivered via connected phone.';
+          detail = 'Delivered via forced layer ${_currentLayerIndex + 1}.';
         } else {
-          detail = 'Phone out of BLE range or disconnected.';
+          layerSucceeded = false;
+          detail = 'Failed due to forced escalation simulation.';
         }
-      } else if (_currentLayerIndex == 1) {
-        // Layer 2 (GSM): Simulating high chance of success
-        layerSucceeded = true;
-        detail = 'Delivered via cellular network.';
       } else {
-        // Layer 3 (Mesh): Fallback
-        layerSucceeded = true;
-        detail = 'Delivered via nearby node.';
+        if (_currentLayerIndex == 0) {
+          // Layer 1 (BLE): Succeeds if the device is connected
+          if (_connectionService.isConnected) {
+            layerSucceeded = true;
+            detail = 'Delivered via connected phone.';
+          } else {
+            detail = 'Phone out of BLE range or disconnected.';
+          }
+        } else if (_currentLayerIndex == 1) {
+          // Layer 2 (GSM): Simulating high chance of success
+          layerSucceeded = true;
+          detail = 'Delivered via cellular network.';
+        } else {
+          // Layer 3 (Mesh): Fallback
+          layerSucceeded = true;
+          detail = 'Delivered via nearby node.';
+        }
       }
 
       if (layerSucceeded) {
@@ -168,6 +215,7 @@ class LiveAlertProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _eventSub?.cancel();
     _escalationTimer?.cancel();
     super.dispose();
   }

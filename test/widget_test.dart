@@ -6,15 +6,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lifora/app/app.dart';
 import 'package:lifora/data/repositories/mock_alert_repository.dart';
 import 'package:lifora/data/repositories/mock_contact_repository.dart';
-import 'package:lifora/data/repositories/mock_device_repository.dart';
+import 'package:lifora/data/services/virtual_wearable_service.dart';
 import 'package:lifora/data/services/device_connection_service.dart';
-import 'package:lifora/data/services/mock_device_connection_service.dart';
 import 'package:lifora/data/services/mock_location_service.dart';
 import 'package:lifora/data/services/notification_service.dart';
 import 'package:lifora/domain/entities/alert.dart';
 import 'package:lifora/domain/repositories/alert_repository.dart';
 import 'package:lifora/domain/repositories/contact_repository.dart';
-import 'package:lifora/domain/repositories/device_repository.dart';
 import 'package:lifora/presentation/providers/home_provider.dart';
 import 'package:lifora/presentation/providers/contacts_provider.dart';
 import 'package:lifora/presentation/providers/alert_history_provider.dart';
@@ -28,10 +26,9 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
 
-    final deviceRepo = MockDeviceRepository();
     final contactRepo = MockContactRepository();
     final alertRepo = MockAlertRepository();
-    final connectionService = MockDeviceConnectionService();
+    final connectionService = VirtualWearableService();
     final locationService = MockLocationService();
     final notificationService = MockNotificationService();
 
@@ -41,15 +38,14 @@ void main() {
           ChangeNotifierProvider<AppSettingsProvider>(
             create: (_) => AppSettingsProvider(prefs),
           ),
-          Provider<DeviceConnectionService>(
+          ChangeNotifierProvider<DeviceConnectionService>(
             create: (_) => connectionService,
           ),
-          Provider<DeviceRepository>(create: (_) => deviceRepo),
           Provider<ContactRepository>(create: (_) => contactRepo),
           Provider<AlertRepository>(create: (_) => alertRepo),
           ChangeNotifierProvider<HomeProvider>(
-            create: (_) => HomeProvider(
-              deviceRepository: deviceRepo,
+            create: (context) => HomeProvider(
+              connectionService: context.read<DeviceConnectionService>(),
               contactRepository: contactRepo,
               alertRepository: alertRepo,
             ),
@@ -67,7 +63,6 @@ void main() {
           ChangeNotifierProvider<DeviceSettingsProvider>(
             create: (_) => DeviceSettingsProvider(
               connectionService: connectionService,
-              deviceRepository: deviceRepo,
             ),
           ),
           ChangeNotifierProvider<LiveAlertProvider>(
