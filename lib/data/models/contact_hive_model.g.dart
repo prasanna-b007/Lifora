@@ -20,15 +20,16 @@ class ContactHiveModelAdapter extends TypeAdapter<ContactHiveModel> {
       id: fields[0] as String,
       name: fields[1] as String,
       phoneNumber: fields[2] as String,
-      relationship: fields[3] as String,
-      isPrimary: fields[4] as bool,
+      email: fields[3] as String?,
+      relationship: fields[4] as String,
+      isPrimary: fields[5] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, ContactHiveModel obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -36,8 +37,10 @@ class ContactHiveModelAdapter extends TypeAdapter<ContactHiveModel> {
       ..writeByte(2)
       ..write(obj.phoneNumber)
       ..writeByte(3)
-      ..write(obj.relationship)
+      ..write(obj.email)
       ..writeByte(4)
+      ..write(obj.relationship)
+      ..writeByte(5)
       ..write(obj.isPrimary);
   }
 

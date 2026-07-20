@@ -3,6 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:lifora/data/services/device_connection_service.dart';
 import 'package:lifora/data/services/virtual_wearable_service.dart';
+import 'package:lifora/presentation/providers/event_log_provider.dart';
+import 'package:lifora/presentation/widgets/event_log_list.dart';
+import 'package:lifora/presentation/providers/emergency_packet_provider.dart';
+import 'dart:convert';
 
 class DeveloperModeScreen extends StatelessWidget {
   const DeveloperModeScreen({super.key});
@@ -28,6 +32,8 @@ class DeveloperModeScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _LiveStatePanel(wearable: wearable),
+            const SizedBox(height: 24),
+            const _LatestEmergencyPacketPanel(),
             const SizedBox(height: 24),
             _SectionTitle('Trigger Simulation'),
             Wrap(
@@ -83,7 +89,7 @@ class DeveloperModeScreen extends StatelessWidget {
                     showDialog(
                       context: context,
                       builder: (_) => AlertDialog(
-                        title: const Text('Event Logs'),
+                        title: const Text('Export JSON Logs'),
                         content: SingleChildScrollView(
                           child: SelectableText(wearable.exportLogAsJson()),
                         ),
@@ -100,17 +106,46 @@ class DeveloperModeScreen extends StatelessWidget {
                       ),
                     );
                   },
-                  child: const Text('View / Export Logs'),
-                ),
-                OutlinedButton(
-                  onPressed: () {
-                    wearable.clearLog();
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Logs cleared')));
-                  },
-                  child: const Text('Clear Logs'),
+                  child: const Text('Export JSON Logs'),
                 ),
               ],
             ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const _SectionTitle('Event Log'),
+                TextButton.icon(
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('Clear Log'),
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: const Text('Delete all event logs?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                context.read<EventLogProvider>().clearLogs();
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Logs cleared')));
+                              },
+                              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                ),
+              ],
+            ),
+            const EventLogList(),
             const SizedBox(height: 48),
           ],
         ),
@@ -196,3 +231,104 @@ class _StateRow extends StatelessWidget {
     );
   }
 }
+
+class _LatestEmergencyPacketPanel extends StatelessWidget {
+  const _LatestEmergencyPacketPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<EmergencyPacketProvider>(
+      builder: (context, provider, child) {
+        final packet = provider.latestPacket;
+        final theme = Theme.of(context);
+        
+        if (packet == null) {
+          return Card(
+            elevation: 0,
+            color: theme.colorScheme.surfaceContainerHighest,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Latest Emergency Packet',
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  const Divider(),
+                  const Text('No packet generated yet.'),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final jsonString = const JsonEncoder.withIndent('  ').convert(packet.toJson());
+
+        return Card(
+          elevation: 0,
+          color: theme.colorScheme.surfaceContainerHighest,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Latest Emergency Packet',
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const Divider(),
+                _StateRow('Packet ID', packet.packetId),
+                _StateRow('Trigger', packet.triggerType),
+                _StateRow('Status', packet.status.name),
+                _StateRow('Time', '${packet.timestamp.hour}:${packet.timestamp.minute.toString().padLeft(2, '0')}:${packet.timestamp.second.toString().padLeft(2, '0')}'),
+                _StateRow('Lat', packet.latitude.toStringAsFixed(4)),
+                _StateRow('Lng', packet.longitude.toStringAsFixed(4)),
+                _StateRow('Battery', '${packet.batteryLevel}%'),
+                _StateRow('Connection', packet.connectionType),
+                _StateRow('Model', packet.deviceModel),
+                _StateRow('Firmware', packet.firmwareVersion),
+                _StateRow('Contacts', '${packet.contacts.length}'),
+                const SizedBox(height: 12),
+                const Text('Address', style: TextStyle(fontWeight: FontWeight.w500)),
+                Text(packet.address, style: const TextStyle(fontFamily: 'monospace')),
+                const Divider(),
+                ExpansionTile(
+                  title: const Text('View JSON'),
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: const EdgeInsets.only(bottom: 8),
+                  children: [
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        icon: const Icon(Icons.copy, size: 16),
+                        label: const Text('Copy JSON'),
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: jsonString));
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Packet copied.')));
+                        },
+                      ),
+                    ),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        jsonString,
+                        style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+

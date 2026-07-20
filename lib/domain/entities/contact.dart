@@ -13,6 +13,9 @@ class Contact {
   /// Phone number in E.164 or local format.
   final String phoneNumber;
 
+  /// Email address for the contact.
+  final String? email;
+
   /// Relationship to the user, e.g., 'Mother', 'Father', 'Sister'.
   final String relationship;
 
@@ -23,6 +26,7 @@ class Contact {
     required this.id,
     required this.name,
     required this.phoneNumber,
+    this.email,
     required this.relationship,
     required this.isPrimary,
   });
@@ -32,6 +36,7 @@ class Contact {
     String? id,
     String? name,
     String? phoneNumber,
+    String? email,
     String? relationship,
     bool? isPrimary,
   }) {
@@ -39,6 +44,7 @@ class Contact {
       id: id ?? this.id,
       name: name ?? this.name,
       phoneNumber: phoneNumber ?? this.phoneNumber,
+      email: email ?? this.email,
       relationship: relationship ?? this.relationship,
       isPrimary: isPrimary ?? this.isPrimary,
     );

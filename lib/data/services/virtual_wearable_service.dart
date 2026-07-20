@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 
 import 'package:lifora/domain/entities/device.dart';
 import 'package:lifora/domain/entities/wearable_event.dart';
+import 'package:lifora/domain/entities/event_log.dart';
+import 'package:lifora/presentation/providers/event_log_provider.dart';
 import 'device_connection_service.dart';
 
 /// Centralized state and simulation engine for a virtual Lifora wearable.
@@ -20,7 +22,9 @@ class VirtualWearableService extends DeviceConnectionService {
 
   Device _currentDevice;
 
-  VirtualWearableService()
+  final EventLogProvider? eventLogger;
+
+  VirtualWearableService({this.eventLogger})
       : _currentDevice = Device(
           id: 'lifora-virtual-001',
           name: 'Lifora Band',
@@ -115,6 +119,72 @@ class VirtualWearableService extends DeviceConnectionService {
     
     _eventLog.add(event);
     _eventController.add(event);
+
+    if (eventLogger != null) {
+      _logToEventLogProvider(type, payload);
+    }
+  }
+
+  void _logToEventLogProvider(WearableEventType type, Map<String, dynamic> payload) {
+    String title = '';
+    String description = '';
+    EventCategory category = EventCategory.system;
+
+    switch (type) {
+      case WearableEventType.connected:
+        title = 'Band Connected';
+        description = 'Successfully connected to wearable device.';
+        category = EventCategory.connection;
+        break;
+      case WearableEventType.disconnected:
+        title = 'Band Disconnected';
+        description = 'Connection to wearable device lost.';
+        category = EventCategory.connection;
+        break;
+      case WearableEventType.tripleTap:
+        title = 'Triple Tap Detected';
+        description = 'User triggered SOS via triple tap.';
+        category = EventCategory.trigger;
+        break;
+      case WearableEventType.longPress:
+        title = 'Long Press Detected';
+        description = 'User triggered SOS via long press.';
+        category = EventCategory.trigger;
+        break;
+      case WearableEventType.fall:
+        title = 'Fall Detected';
+        description = 'Device detected a hard fall.';
+        category = EventCategory.trigger;
+        break;
+      case WearableEventType.whistle:
+        title = 'Whistle Detected';
+        description = 'Device detected a whistle pattern.';
+        category = EventCategory.trigger;
+        break;
+      case WearableEventType.batteryChanged:
+        final level = payload['newLevel'] as int?;
+        title = 'Battery Updated';
+        description = level != null ? 'Battery level is now $level%.' : 'Battery level changed.';
+        category = EventCategory.battery;
+        if (level != null && level <= 20) {
+          title = 'Low Battery';
+        }
+        break;
+      case WearableEventType.firmwareUpdated:
+        title = 'Firmware Updated';
+        description = 'Updated to ${payload['newVersion']}';
+        category = EventCategory.system;
+        break;
+      case WearableEventType.manualSos:
+        title = 'Manual SOS Started';
+        description = 'SOS triggered manually from app.';
+        category = EventCategory.trigger;
+        break;
+    }
+
+    if (title.isNotEmpty) {
+      eventLogger!.addLog(title, description, category);
+    }
   }
 
   // --- Developer Mode API ---

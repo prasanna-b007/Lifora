@@ -120,4 +120,9 @@ class MockAlertRepository implements AlertRepository {
   void addAlert(Alert alert) {
     _alerts.insert(0, alert); // Most recent first.
   }
+
+  @override
+  void deleteAlert(String id) {
+    _alerts.removeWhere((alert) => alert.id == id);
+  }
 }

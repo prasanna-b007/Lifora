@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:lifora/app/routes.dart';
 import 'package:lifora/presentation/providers/app_settings_provider.dart';
+import 'package:lifora/domain/entities/event_log.dart';
+import 'package:lifora/presentation/providers/event_log_provider.dart';
 
 /// Screen for application-wide settings (Appearance, Notifications, Permissions, About).
 class AppSettingsScreen extends StatelessWidget {
@@ -180,11 +182,16 @@ class _VersionTileState extends State<_VersionTile> {
       title: const Text('App Version'),
       subtitle: const Text('Current Version'),
       trailing: const Text('1.0.0-beta'),
-      onTap: () {
+      onTap: () async {
         _tapCount++;
         if (_tapCount >= 7) {
           _tapCount = 0;
-          Navigator.pushNamed(context, AppRoutes.developerMode);
+          final eventLogger = context.read<EventLogProvider>();
+          eventLogger.addLog('Developer Mode Enabled', 'Entered developer console.', EventCategory.system);
+          await Navigator.pushNamed(context, AppRoutes.developerMode);
+          if (context.mounted) {
+            eventLogger.addLog('Developer Mode Disabled', 'Exited developer console.', EventCategory.system);
+          }
         }
       },
     );

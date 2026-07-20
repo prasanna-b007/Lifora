@@ -4,10 +4,14 @@ import 'package:lifora/domain/repositories/alert_repository.dart';
 import 'package:lifora/data/models/alert_hive_model.dart';
 import 'package:lifora/data/repositories/mock_alert_repository.dart';
 
+import 'package:lifora/domain/entities/event_log.dart';
+import 'package:lifora/presentation/providers/event_log_provider.dart';
+
 class HiveAlertRepository implements AlertRepository {
   final Box<AlertHiveModel> _box;
+  final EventLogProvider? eventLogger;
 
-  HiveAlertRepository(this._box) {
+  HiveAlertRepository(this._box, {this.eventLogger}) {
     _initSeedData();
   }
 
@@ -41,5 +45,12 @@ class HiveAlertRepository implements AlertRepository {
   void addAlert(Alert alert) {
     final hiveModel = AlertHiveModel.fromDomain(alert);
     _box.put(alert.id, hiveModel);
+    eventLogger?.addLog('Alert Saved', 'Alert successfully saved to history.', EventCategory.history);
+  }
+
+  @override
+  void deleteAlert(String id) {
+    _box.delete(id);
+    eventLogger?.addLog('Alert Deleted', 'Alert successfully removed from history.', EventCategory.history);
   }
 }

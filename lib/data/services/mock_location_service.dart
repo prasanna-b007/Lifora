@@ -9,6 +9,12 @@ class MockLocationService implements LocationService {
       longitude: 76.9558,
       accuracy: 0.0,
       timestamp: DateTime.now(),
+      isMockLocation: true,
     );
+  }
+
+  @override
+  Future<String> getAddressFromCoordinates(double latitude, double longitude) async {
+    return 'Coimbatore, Tamil Nadu, India';
   }
 }

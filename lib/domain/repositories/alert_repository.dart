@@ -13,4 +13,7 @@ abstract class AlertRepository {
 
   /// Adds a new [alert] to the store.
   void addAlert(Alert alert);
+
+  /// Deletes an alert from the store.
+  void deleteAlert(String id);
 }

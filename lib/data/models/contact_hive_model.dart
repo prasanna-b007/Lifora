@@ -15,15 +15,19 @@ class ContactHiveModel extends HiveObject {
   final String phoneNumber;
 
   @HiveField(3)
-  final String relationship;
+  final String? email;
 
   @HiveField(4)
+  final String relationship;
+
+  @HiveField(5)
   final bool isPrimary;
 
   ContactHiveModel({
     required this.id,
     required this.name,
     required this.phoneNumber,
+    this.email,
     required this.relationship,
     required this.isPrimary,
   });
@@ -34,6 +38,7 @@ class ContactHiveModel extends HiveObject {
       id: contact.id,
       name: contact.name,
       phoneNumber: contact.phoneNumber,
+      email: contact.email,
       relationship: contact.relationship,
       isPrimary: contact.isPrimary,
     );
@@ -45,6 +50,7 @@ class ContactHiveModel extends HiveObject {
       id: id,
       name: name,
       phoneNumber: phoneNumber,
+      email: email,
       relationship: relationship,
       isPrimary: isPrimary,
     );

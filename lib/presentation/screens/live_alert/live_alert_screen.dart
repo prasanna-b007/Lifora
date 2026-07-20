@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:lifora/app/theme/app_colors.dart';
+import 'package:lifora/core/location_utils.dart';
 import 'package:lifora/domain/entities/alert.dart';
 import 'package:lifora/presentation/providers/live_alert_provider.dart';
+import 'package:lifora/presentation/widgets/location_map_card.dart';
 import 'package:lifora/presentation/widgets/sos_status_ladder.dart';
 
 /// Screen displayed when an SOS alert is active.
@@ -110,11 +112,36 @@ class _LiveAlertScreenState extends State<LiveAlertScreen> {
                 ),
               ),
 
-              // Status Ladder
+              // Live alert details
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(32),
-                  child: SosStatusLadder(layers: alert.layers),
+                  child: Column(
+                    children: [
+                      LocationMapCard(
+                        latitude: provider.latitude,
+                        longitude: provider.longitude,
+                        address: provider.address,
+                        isAddressLoading: provider.isAddressLoading,
+                        isLoading: provider.isLocationLoading,
+                        errorMessage: provider.locationErrorMessage,
+                        addressErrorMessage: provider.addressErrorMessage,
+                        onOpenMaps: () {
+                          LocationUtils.openGoogleMaps(
+                            context,
+                            provider.latitude,
+                            provider.longitude,
+                          );
+                        },
+                        isMapButtonEnabled: LocationUtils.isValidCoordinates(
+                          provider.latitude,
+                          provider.longitude,
+                        ) && !provider.isLocationLoading && provider.locationErrorMessage == null,
+                      ),
+                      const SizedBox(height: 24),
+                      SosStatusLadder(layers: alert.layers),
+                    ],
+                  ),
                 ),
               ),
 

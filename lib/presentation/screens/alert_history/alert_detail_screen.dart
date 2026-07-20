@@ -371,20 +371,59 @@ class _NotifiedContactsCard extends StatelessWidget {
                 final name = contact?.name ?? 'Removed contact';
                 final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
 
-                return Chip(
-                  avatar: CircleAvatar(
-                    backgroundColor: theme.colorScheme.primaryContainer,
-                    child: Text(
-                      initial,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: theme.colorScheme.primary,
-                      ),
+                return Card(
+                  color: theme.colorScheme.surface,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: theme.colorScheme.primaryContainer,
+                              child: Text(
+                                initial,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                name,
+                                style: theme.textTheme.titleMedium,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Phone',
+                          style: theme.textTheme.labelSmall,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          contact?.phoneNumber ?? '-',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                        if (contact?.email != null && contact!.email!.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'Email',
+                            style: theme.textTheme.labelSmall,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            contact.email!,
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                  label: Text(name),
-                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                  side: BorderSide.none,
                 );
               }).toList(),
             ),

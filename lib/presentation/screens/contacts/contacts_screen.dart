@@ -237,11 +237,27 @@ class _ContactCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${contact.relationship} · ${contact.phoneNumber}',
+                        contact.relationship,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
+                      const SizedBox(height: 4),
+                      Text(
+                        contact.phoneNumber,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      if (contact.email != null && contact.email!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          contact.email!,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -295,6 +311,7 @@ class _ContactFormState extends State<_ContactForm> {
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
   late final TextEditingController _relationController;
+  late final TextEditingController _emailController;
   bool _isPrimary = false;
 
   @override
@@ -304,6 +321,7 @@ class _ContactFormState extends State<_ContactForm> {
     _nameController = TextEditingController(text: c?.name ?? '');
     _phoneController = TextEditingController(text: c?.phoneNumber ?? '');
     _relationController = TextEditingController(text: c?.relationship ?? '');
+    _emailController = TextEditingController(text: c?.email ?? '');
     _isPrimary = c?.isPrimary ?? false;
   }
 
@@ -312,6 +330,7 @@ class _ContactFormState extends State<_ContactForm> {
     _nameController.dispose();
     _phoneController.dispose();
     _relationController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
@@ -323,6 +342,7 @@ class _ContactFormState extends State<_ContactForm> {
       id: id,
       name: _nameController.text.trim(),
       phoneNumber: _phoneController.text.trim(),
+      email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
       relationship: _relationController.text.trim(),
       isPrimary: _isPrimary,
     );
@@ -384,6 +404,23 @@ class _ContactFormState extends State<_ContactForm> {
               ),
               textCapitalization: TextCapitalization.words,
               validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _emailController,
+              decoration: const InputDecoration(
+                labelText: 'Email (Optional)',
+                prefixIcon: Icon(Icons.email_outlined),
+              ),
+              keyboardType: TextInputType.emailAddress,
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) {
+                  return null;
+                }
+                final email = v.trim();
+                final emailRegex = RegExp(r"^[^@\s]+@[^@\s]+\.[^@\s]+");
+                return emailRegex.hasMatch(email) ? null : 'Enter a valid email';
+              },
             ),
             const SizedBox(height: 16),
             CheckboxListTile(

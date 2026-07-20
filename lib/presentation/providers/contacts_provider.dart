@@ -13,7 +13,7 @@ class ContactsProvider extends ChangeNotifier {
 
   /// Returns all emergency contacts.
   List<Contact> get contacts {
-    print("Loading contacts...");
+    debugPrint("Loading contacts...");
     return _contactRepository.getContacts();
   }
 
@@ -24,7 +24,7 @@ class ContactsProvider extends ChangeNotifier {
   void addContact(Contact contact) {
     if (!canAddContact) return;
     
-    print("Saving contact...");
+    debugPrint("Saving contact...");
     
     // If this is the first contact or marked as primary, ensure others are not primary.
     final isFirst = contacts.isEmpty;
@@ -40,7 +40,7 @@ class ContactsProvider extends ChangeNotifier {
 
   /// Updates an existing contact.
   void updateContact(Contact contact) {
-    print("Saving contact...");
+    debugPrint("Saving contact...");
     if (contact.isPrimary) {
       _clearPrimary();
     }
@@ -69,7 +69,7 @@ class ContactsProvider extends ChangeNotifier {
 
     _clearPrimary();
     _contactRepository.updateContact(contact.copyWith(isPrimary: true));
-    print("Primary contact updated.");
+    debugPrint("Primary contact updated.");
     notifyListeners();
   }
 

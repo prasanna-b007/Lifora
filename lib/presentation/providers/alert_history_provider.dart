@@ -27,4 +27,10 @@ class AlertHistoryProvider extends ChangeNotifier {
     _alertRepository.addAlert(alert);
     notifyListeners();
   }
+
+  /// Deletes an alert from history.
+  void deleteAlert(String id) {
+    _alertRepository.deleteAlert(id);
+    notifyListeners();
+  }
 }

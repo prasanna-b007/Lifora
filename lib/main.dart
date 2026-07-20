@@ -6,6 +6,9 @@ import 'package:permission_handler/permission_handler.dart';
 
 import 'app/app.dart';
 
+import 'domain/entities/event_log.dart';
+import 'presentation/providers/event_log_provider.dart';
+
 import 'data/repositories/hive_alert_repository.dart';
 import 'data/repositories/hive_contact_repository.dart';
 import 'data/models/contact_hive_model.dart';
@@ -18,6 +21,7 @@ import 'data/services/location_service.dart';
 import 'data/services/geolocator_location_service.dart';
 import 'data/services/notification_service.dart';
 import 'data/services/local_notification_service.dart';
+import 'data/services/emergency_communication_service.dart';
 
 import 'domain/repositories/alert_repository.dart';
 import 'domain/repositories/contact_repository.dart';
@@ -28,6 +32,7 @@ import 'presentation/providers/alert_history_provider.dart';
 import 'presentation/providers/device_settings_provider.dart';
 import 'presentation/providers/live_alert_provider.dart';
 import 'presentation/providers/app_settings_provider.dart';
+import 'presentation/providers/emergency_packet_provider.dart';
 
 /// Lifora — Smart Wearable Emergency Communication System
 ///
@@ -53,9 +58,18 @@ void main() async {
   // Request notification permission (needed for Android 13+)
   await Permission.notification.request();
 
+  final eventLogger = EventLogProvider();
+  eventLogger.addLog('App Started', 'Application initialized.', EventCategory.system);
+
+  AppLifecycleListener(
+    onDetach: () => eventLogger.addLog('App Closed', 'Application detached.', EventCategory.system),
+  );
+
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider<EventLogProvider>.value(value: eventLogger),
+
         // ── App Settings ─────────────────────────────────────────
         ChangeNotifierProvider<AppSettingsProvider>(
           create: (_) => AppSettingsProvider(prefs),
@@ -63,7 +77,7 @@ void main() async {
 
         // ── Services ─────────────────────────────────────────────
         ChangeNotifierProvider<DeviceConnectionService>(
-          create: (_) => VirtualWearableService(),
+          create: (_) => VirtualWearableService(eventLogger: eventLogger),
         ),
         Provider<LocationService>(
           create: (_) => GeolocatorLocationService(),
@@ -71,13 +85,16 @@ void main() async {
         Provider<NotificationService>(
           create: (_) => LocalNotificationService(),
         ),
+        Provider<EmergencyCommunicationService>(
+          create: (_) => MockEmergencyCommunicationService(),
+        ),
 
         // ── Repositories ─────────────────────────────────────────
         Provider<ContactRepository>(
           create: (_) => HiveContactRepository(contactsBox),
         ),
         Provider<AlertRepository>(
-          create: (_) => HiveAlertRepository(alertsBox),
+          create: (_) => HiveAlertRepository(alertsBox, eventLogger: eventLogger),
         ),
 
         // ── View Models ──────────────────────────────────────────
@@ -103,6 +120,12 @@ void main() async {
             connectionService: context.read<DeviceConnectionService>(),
           ),
         ),
+        ChangeNotifierProvider<EmergencyPacketProvider>(
+          create: (context) => EmergencyPacketProvider(
+            communicationService: context.read<EmergencyCommunicationService>(),
+            eventLogger: eventLogger,
+          ),
+        ),
         ChangeNotifierProvider<LiveAlertProvider>(
           lazy: false,
           create: (context) => LiveAlertProvider(
@@ -111,6 +134,8 @@ void main() async {
             contactRepository: context.read<ContactRepository>(),
             locationService: context.read<LocationService>(),
             notificationService: context.read<NotificationService>(),
+            emergencyPacketProvider: context.read<EmergencyPacketProvider>(),
+            eventLogger: eventLogger,
           ),
         ),
       ],
