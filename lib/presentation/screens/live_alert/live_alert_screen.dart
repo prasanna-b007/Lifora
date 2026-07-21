@@ -126,6 +126,9 @@ class _LiveAlertScreenState extends State<LiveAlertScreen> {
                         isLoading: provider.isLocationLoading,
                         errorMessage: provider.locationErrorMessage,
                         addressErrorMessage: provider.addressErrorMessage,
+                        onRetry: () {
+                          provider.retryLocation();
+                        },
                         onOpenMaps: () {
                           LocationUtils.openGoogleMaps(
                             context,

@@ -14,6 +14,7 @@ class LocationMapCard extends StatelessWidget {
     this.addressErrorMessage,
     this.onOpenMaps,
     this.isMapButtonEnabled = false,
+    this.onRetry,
   });
 
   final double latitude;
@@ -25,6 +26,7 @@ class LocationMapCard extends StatelessWidget {
   final String? addressErrorMessage;
   final void Function()? onOpenMaps;
   final bool isMapButtonEnabled;
+  final void Function()? onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -70,6 +72,14 @@ class LocationMapCard extends StatelessWidget {
                         style: theme.textTheme.bodyMedium,
                         textAlign: TextAlign.center,
                       ),
+                      if (onRetry != null) ...[
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: onRetry,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Retry'),
+                        ),
+                      ],
                     ],
                   ),
                 ),

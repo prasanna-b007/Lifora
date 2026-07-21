@@ -81,6 +81,9 @@ class AlertHiveModel extends HiveObject {
   @HiveField(9)
   final int? batteryAtTrigger;
 
+  @HiveField(10)
+  final bool locationFailed;
+
   AlertHiveModel({
     required this.id,
     required this.timestamp,
@@ -92,6 +95,7 @@ class AlertHiveModel extends HiveObject {
     required this.accuracy,
     required this.notifiedContactIds,
     this.batteryAtTrigger,
+    this.locationFailed = false,
   });
 
   factory AlertHiveModel.fromDomain(Alert alert) {
@@ -106,6 +110,7 @@ class AlertHiveModel extends HiveObject {
       accuracy: alert.accuracy,
       notifiedContactIds: alert.notifiedContactIds,
       batteryAtTrigger: alert.batteryAtTrigger,
+      locationFailed: alert.locationFailed,
     );
   }
 
@@ -121,6 +126,7 @@ class AlertHiveModel extends HiveObject {
       accuracy: accuracy,
       notifiedContactIds: notifiedContactIds,
       batteryAtTrigger: batteryAtTrigger,
+      locationFailed: locationFailed,
     );
   }
 }

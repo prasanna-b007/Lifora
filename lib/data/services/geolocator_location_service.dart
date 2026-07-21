@@ -1,41 +1,43 @@
+import 'package:flutter/foundation.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:lifora/data/services/location_service.dart';
-import 'package:lifora/data/services/mock_location_service.dart';
 
 class GeolocatorLocationService implements LocationService {
-  final LocationService _fallback = MockLocationService();
-
   @override
   Future<LocationResult> getCurrentLocation() async {
     bool serviceEnabled;
     LocationPermission permission;
 
-    // Test if location services are enabled.
+    // 1. Check if location services are enabled at OS level
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      // Location services are not enabled, return fallback
-      return _fallback.getCurrentLocation();
+      debugPrint('GeolocatorLocationService: Location services are disabled.');
+      throw Exception('Location services are disabled.');
     }
 
+    // 2. Check and request location permissions
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        // Permissions are denied, return fallback
-        return _fallback.getCurrentLocation();
+        debugPrint('GeolocatorLocationService: Location permissions are denied.');
+        throw Exception('Location permissions are denied.');
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      // Permissions are denied forever, return fallback
-      return _fallback.getCurrentLocation();
+      debugPrint('GeolocatorLocationService: Location permissions are permanently denied.');
+      throw Exception('Location permissions are permanently denied.');
     }
 
-    // When we reach here, permissions are granted and we can
-    // continue accessing the position of the device.
+    // 3. Fetch location
     try {
-      final position = await Geolocator.getCurrentPosition();
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 20),
+      );
+      
       return LocationResult(
         latitude: position.latitude,
         longitude: position.longitude,
@@ -43,15 +45,16 @@ class GeolocatorLocationService implements LocationService {
         timestamp: position.timestamp,
         isMockLocation: false,
       );
-    } catch (e) {
-      return _fallback.getCurrentLocation();
+    } catch (e, stackTrace) {
+      debugPrint('GeolocatorLocationService: Exception during getCurrentPosition: $e\n$stackTrace');
+      throw Exception('Failed to get location: $e');
     }
   }
 
   @override
   Future<String> getAddressFromCoordinates(double latitude, double longitude) async {
     try {
-      final placemarks = await placemarkFromCoordinates(latitude, longitude);
+      final placemarks = await placemarkFromCoordinates(latitude, longitude).timeout(const Duration(seconds: 8));
       if (placemarks.isEmpty) {
         return 'Address unavailable';
       }

@@ -30,6 +30,9 @@ class LiveAlertProvider extends ChangeNotifier {
 
   StreamSubscription<WearableEvent>? _eventSub;
   int? _forcedEscalationLayerForCurrentAlert;
+  
+  bool _isStartingAlert = false;
+  String? _activeAlertId;
 
   LiveAlertProvider({
     required DeviceConnectionService connectionService,
@@ -63,6 +66,7 @@ class LiveAlertProvider extends ChangeNotifier {
       _currentAlert != null &&
       !_isLocationLoading &&
       _locationErrorMessage == null &&
+      !_currentAlert!.locationFailed &&
       _currentAlert!.latitude != 0.0 &&
       _currentAlert!.longitude != 0.0;
   String? get locationErrorMessage => _locationErrorMessage;
@@ -86,60 +90,89 @@ class LiveAlertProvider extends ChangeNotifier {
 
   /// Starts a new SOS alert sequence from a triggered wearable event.
   Future<void> _startAlertFromEvent(WearableEvent event) async {
+    if (_isStartingAlert) {
+      debugPrint('SOS sequence already starting. Ignoring concurrent trigger.');
+      return;
+    }
+
     if (_currentAlert != null && _currentAlert!.status == AlertStatus.inProgress) {
       return; // Already running
     }
 
-    _escalationTimer?.cancel();
-    
-    int? batteryAtTrigger = event.payload['batteryLevel'] as int?;
-    _forcedEscalationLayerForCurrentAlert = event.payload['forcedOutcomeLayer'] as int?;
-
-    // Fetch location
-    _isLocationLoading = true;
-    _locationErrorMessage = null;
-    notifyListeners();
-    eventLogger?.addLog('Location Requested', 'Requesting current GPS location.', EventCategory.gps);
-    
-    double lat = 0.0;
-    double lng = 0.0;
-    double accuracy = 0.0;
-    String addr = 'Unknown';
-    
+    _isStartingAlert = true;
     try {
-      final locationResult = await _locationService.getCurrentLocation().timeout(const Duration(seconds: 5));
-      if (locationResult.isMockLocation) {
-        _locationErrorMessage = 'Please enable location services.';
-        eventLogger?.addLog('Location Failed', 'GPS location unavailable; using fallback.', EventCategory.gps);
-      } else {
-        lat = locationResult.latitude;
-        lng = locationResult.longitude;
-        accuracy = locationResult.accuracy;
-        _locationErrorMessage = null;
-        
-        try {
-          final addressResult = await _locationService
-              .getAddressFromCoordinates(lat, lng)
-              .timeout(const Duration(seconds: 8));
-          addr = addressResult;
-        } catch (e) {
-          debugPrint('Address lookup failed: $e');
+      _escalationTimer?.cancel();
+      
+      int? batteryAtTrigger = event.payload['batteryLevel'] as int?;
+      _forcedEscalationLayerForCurrentAlert = event.payload['forcedOutcomeLayer'] as int?;
+
+      // Reset ALL transient state for the new alert
+      _currentAlert = null;
+      _address = null;
+      _addressErrorMessage = null;
+      _isLocationLoading = true;
+      _isAddressLoading = true;
+      _locationErrorMessage = null;
+      _currentLayerIndex = 0;
+      
+      // Generate a unique ID for this alert session for timer safety
+      _activeAlertId = DateTime.now().millisecondsSinceEpoch.toString();
+      final currentAlertId = _activeAlertId!;
+      
+      notifyListeners();
+      
+      debugPrint('SOS Started: ID $currentAlertId, Type: ${event.type}');
+      eventLogger?.addLog('Location Requested', 'Requesting current GPS location.', EventCategory.gps);
+      
+      double lat = 0.0;
+      double lng = 0.0;
+      double accuracy = 0.0;
+      String addr = 'Unknown';
+      bool locFailed = false;
+      
+      try {
+        debugPrint('Requesting GPS...');
+        // Fetch location (timeout handled within geolocator_location_service)
+        final locationResult = await _locationService.getCurrentLocation();
+        if (locationResult.isMockLocation) {
+          _locationErrorMessage = 'Please enable location services.';
+          locFailed = true;
+          debugPrint('Location Result: Mock location returned. Location failed.');
+          eventLogger?.addLog('Location Failed', 'GPS location unavailable; using fallback.', EventCategory.gps);
+        } else {
+          lat = locationResult.latitude;
+          lng = locationResult.longitude;
+          accuracy = locationResult.accuracy;
+          _locationErrorMessage = null;
+          debugPrint('Location Acquired: lat=$lat, lng=$lng');
+          
+          try {
+            debugPrint('Requesting Address...');
+            final addressResult = await _locationService
+                .getAddressFromCoordinates(lat, lng)
+                .timeout(const Duration(seconds: 8));
+            addr = addressResult;
+            debugPrint('Address Acquired: $addr');
+          } catch (e) {
+            debugPrint('Address lookup failed: $e');
+          }
+          
+          eventLogger?.addLog('Location Acquired', 'GPS location successfully acquired.', EventCategory.gps);
         }
-        
-        eventLogger?.addLog('Location Acquired', 'GPS location successfully acquired.', EventCategory.gps);
+      } catch (e) {
+        _locationErrorMessage = e.toString().replaceFirst('Exception: ', '');
+        locFailed = true;
+        eventLogger?.addLog('Location Failed', 'Failed to acquire GPS location.', EventCategory.gps);
+        debugPrint('Location fetch failed: $e');
       }
-    } catch (e) {
-      _locationErrorMessage = 'Please enable location services.';
-      eventLogger?.addLog('Location Failed', 'Failed to acquire GPS location.', EventCategory.gps);
-      debugPrint('Location fetch failed or timed out: $e');
-    }
-    
-    _isLocationLoading = false;
-    _isAddressLoading = false;
-    
-    final contacts = _contactRepository.getContacts();
-    
-    // GENERATE PACKET BEFORE ALERT STARTS
+      
+      _isLocationLoading = false;
+      _isAddressLoading = false;
+      
+      final contacts = _contactRepository.getContacts();
+      
+      // GENERATE PACKET BEFORE ALERT STARTS
+      debugPrint('Generating Emergency Packet...');
     _emergencyPacketProvider?.generatePacket(
       device: _connectionService.device,
       triggerType: event.type,
@@ -153,7 +186,7 @@ class LiveAlertProvider extends ChangeNotifier {
 
     // Initialize the alert state
     _currentAlert = Alert(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: currentAlertId,
       timestamp: DateTime.now(),
       status: AlertStatus.inProgress,
       resolvedAtLayer: 0,
@@ -162,6 +195,7 @@ class LiveAlertProvider extends ChangeNotifier {
       accuracy: accuracy,
       batteryAtTrigger: batteryAtTrigger,
       notifiedContactIds: [],
+      locationFailed: locFailed,
       layers: const [
         LayerStatus(layer: 1, label: 'BLE to Phone', state: LayerState.pending),
         LayerStatus(layer: 2, label: 'GSM / SMS Fallback', state: LayerState.pending),
@@ -186,8 +220,11 @@ class LiveAlertProvider extends ChangeNotifier {
       eventLogger?.addLog('Notification Failed', 'Failed to send SOS notification.', EventCategory.notification);
     }
 
-    // Begin the escalation simulation
-    _processNextLayer();
+      // Begin the escalation simulation
+      _processNextLayer();
+    } finally {
+      _isStartingAlert = false;
+    }
   }
 
   /// Cancels an ongoing alert.
@@ -197,6 +234,7 @@ class LiveAlertProvider extends ChangeNotifier {
     }
 
     _escalationTimer?.cancel();
+    _activeAlertId = null;
 
     _currentAlert = _currentAlert!.copyWith(
       status: AlertStatus.cancelled,
@@ -230,8 +268,12 @@ class LiveAlertProvider extends ChangeNotifier {
     _updateLayerState(_currentLayerIndex, LayerState.attempting);
 
     // Simulate delay for the current layer
+    final timerAlertId = _currentAlert!.id;
     _escalationTimer = Timer(const Duration(seconds: 3), () {
-      if (_currentAlert == null || _currentAlert!.status != AlertStatus.inProgress) return;
+      if (_currentAlert == null || _currentAlert!.status != AlertStatus.inProgress || _activeAlertId != timerAlertId) {
+        debugPrint('Timer callback ignored for alert $timerAlertId (current active: $_activeAlertId, status: ${_currentAlert?.status})');
+        return;
+      }
 
       // Logic to determine success/failure for the simulation
       bool layerSucceeded = false;
@@ -311,6 +353,57 @@ class LiveAlertProvider extends ChangeNotifier {
       detail: detail,
     );
     _currentAlert = _currentAlert!.copyWith(layers: updatedLayers);
+    notifyListeners();
+  }
+
+  Future<void> retryLocation() async {
+    if (_currentAlert == null || _currentAlert!.status != AlertStatus.inProgress) return;
+    
+    _isLocationLoading = true;
+    _isAddressLoading = true;
+    _locationErrorMessage = null;
+    notifyListeners();
+    
+    double lat = 0.0;
+    double lng = 0.0;
+    double accuracy = 0.0;
+    String addr = 'Unknown';
+    bool locFailed = false;
+
+    try {
+      final locationResult = await _locationService.getCurrentLocation();
+      if (locationResult.isMockLocation) {
+        _locationErrorMessage = 'Please enable location services.';
+        locFailed = true;
+      } else {
+        lat = locationResult.latitude;
+        lng = locationResult.longitude;
+        accuracy = locationResult.accuracy;
+        _locationErrorMessage = null;
+        try {
+          addr = await _locationService.getAddressFromCoordinates(lat, lng);
+        } catch (_) {}
+      }
+    } catch (e) {
+      _locationErrorMessage = e.toString().replaceFirst('Exception: ', '');
+      locFailed = true;
+    }
+    
+    _isLocationLoading = false;
+    _isAddressLoading = false;
+    _address = addr;
+    if (addr == 'Address unavailable') {
+      _addressErrorMessage = 'Unable to resolve address.';
+    } else {
+      _addressErrorMessage = null;
+    }
+
+    _currentAlert = _currentAlert!.copyWith(
+      latitude: lat,
+      longitude: lng,
+      accuracy: accuracy,
+      locationFailed: locFailed,
+    );
     notifyListeners();
   }
 

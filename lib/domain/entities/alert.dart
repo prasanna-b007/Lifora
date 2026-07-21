@@ -51,6 +51,9 @@ class Alert {
   /// The battery level of the wearable at the moment the alert was triggered.
   final int? batteryAtTrigger;
 
+  /// Whether the location fetching failed during the SOS sequence.
+  final bool locationFailed;
+
   const Alert({
     required this.id,
     required this.timestamp,
@@ -62,6 +65,7 @@ class Alert {
     this.accuracy = 0.0,
     required this.notifiedContactIds,
     this.batteryAtTrigger,
+    this.locationFailed = false,
   });
 
   /// Returns a copy of this [Alert] with the given fields replaced.
@@ -76,6 +80,7 @@ class Alert {
     double? accuracy,
     List<String>? notifiedContactIds,
     int? batteryAtTrigger,
+    bool? locationFailed,
   }) {
     return Alert(
       id: id ?? this.id,
@@ -88,6 +93,7 @@ class Alert {
       accuracy: accuracy ?? this.accuracy,
       notifiedContactIds: notifiedContactIds ?? this.notifiedContactIds,
       batteryAtTrigger: batteryAtTrigger ?? this.batteryAtTrigger,
+      locationFailed: locationFailed ?? this.locationFailed,
     );
   }
 }
