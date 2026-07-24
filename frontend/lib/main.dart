@@ -86,7 +86,7 @@ void main() async {
           create: (_) => LocalNotificationService(),
         ),
         Provider<EmergencyCommunicationService>(
-          create: (_) => MockEmergencyCommunicationService(),
+  create: (_) => TelegramCommunicationService(),
         ),
 
         // ── Repositories ─────────────────────────────────────────
